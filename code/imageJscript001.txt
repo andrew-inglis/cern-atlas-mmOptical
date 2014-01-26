@@ -1,0 +1,113 @@
+//
+// retrieve the list of variables that has been
+// passed to the imageJ script
+// then extract them into individual information
+//
+
+argv = getArgument();
+
+if (lengthOf(argv) == 0) {
+    write("usage:        ");
+    exit();
+}
+arg_array = split(argv,":");
+
+color = arg_array[0];
+fileToOpen = arg_array[1];
+bGroundLoop = arg_array[2];
+fGroundLoop = arg_array[3];
+
+print(color);
+print(fileToOpen);
+
+open(fileToOpen);
+//open("./cropped_MM.tif");
+
+run("Stack to Images");
+// only use the image of interest
+if (color=="R" || color=="r") {
+	selectWindow("Blue");
+	close();
+	selectWindow("Green");
+	close();
+	selectWindow("Red");
+}
+if (color=="G" || color=="g") {
+	selectWindow("Blue");
+	close();
+	selectWindow("Red");
+	close();
+	selectWindow("Green");
+}
+if (color=="B" || color=="b") {
+	selectWindow("Green");
+	close();
+	selectWindow("Red");
+	close();
+	selectWindow("Blue");
+}
+
+// save both fore and background.
+
+saveAs("Tiff", "AUTO_fGround.tif"); // AUTO means that this is automatically generated
+
+saveAs("Tiff", "AUTO_bGround.tif");
+
+print("smoothing background");
+for (i = 0; i < bGroundLoop; i++) {
+	run("Smooth");
+}
+print("finished smoothing background");
+print("re-saving background smooth");
+saveAs("Tiff", "AUTO_bGround.tif");
+
+
+// move background to a floating point
+
+
+open("AUTO_fGround.tif");
+print("smoothing foreground");
+for (i = 0; i < fGroundLoop; i++) {
+	run("Smooth");
+}
+
+print("finished smoothing foreground");
+
+
+//run("Add...", "value=30000");
+saveAs("Tiff", "AUTO_fGround.tif");
+
+imageCalculator("Subtract create 32-bit", "AUTO_fGround.tif","AUTO_bGround.tif");
+
+selectWindow("Result of AUTO_fGround.tif");
+
+// we will extract the numbers from this 32-bit floating point before we output the subtraction
+// or the strip image since we will be adding an arbitrary value on these
+
+makeRectangle(0, 1088, 3343, 36);
+
+profile = getProfile();
+for (i=0; i<profile.length; i++)
+      setResult("Value", i, profile[i]);
+updateResults;
+saveAs("Measurements", "sliver_auto_pp.txt");
+run("Clear Results");
+
+selectWindow("Result of AUTO_fGround.tif");
+close();
+selectWindow("AUTO_fGround.tif");
+close();
+selectWindow("AUTO_bGround.tif");
+close();
+
+// save the image in human form to look at
+open("AUTO_fGround.tif");
+run("Add...", "value=30000");
+open("AUTO_bGround.tif");
+
+imageCalculator("Subtract create", "AUTO_fGround.tif","AUTO_bGround.tif");
+saveAs("Tiff", "AUTO_subtraction.tif");
+
+makeRectangle(0, 1088, 3343, 36);
+run("Crop");
+saveAs("Tiff", "AUTO_strip.tif");
