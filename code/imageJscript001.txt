@@ -17,6 +17,12 @@ fileToOpen = arg_array[1];
 bGroundLoop = arg_array[2];
 fGroundLoop = arg_array[3];
 
+startx = arg_array[4];
+starty = arg_array[5];
+
+width = arg_array[6];
+length = arg_array[7];
+
 print(color);
 print(fileToOpen);
 
@@ -84,7 +90,7 @@ selectWindow("Result of AUTO_fGround.tif");
 // we will extract the numbers from this 32-bit floating point before we output the subtraction
 // or the strip image since we will be adding an arbitrary value on these
 
-makeRectangle(0, 1088, 3343, 36);
+makeRectangle(startx, starty, length, width);
 
 profile = getProfile();
 for (i=0; i<profile.length; i++)
@@ -108,6 +114,13 @@ open("AUTO_bGround.tif");
 imageCalculator("Subtract create", "AUTO_fGround.tif","AUTO_bGround.tif");
 saveAs("Tiff", "AUTO_subtraction.tif");
 
-makeRectangle(0, 1088, 3343, 36);
+makeRectangle(startx, starty, length, width);
 run("Crop");
 saveAs("Tiff", "AUTO_strip.tif");
+
+open(fileToOpen);
+setColor(255,255,255);
+//drawRect(0, 1088, 3343, 36);
+drawRect(startx, starty, length, width);;
+saveAs("Tiff", "AUTO_roi.tif");
+

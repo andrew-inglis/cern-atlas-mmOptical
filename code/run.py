@@ -8,6 +8,7 @@
 import os
 from sys import argv
 from math import copysign
+import matplotlib.pyplot as plt
 
 
 
@@ -24,9 +25,21 @@ plotMode = argv[4] #0-gnuplot, 1-pyplot
 backgroundSmoothingParameter = argv[5]
 foregroundSmoothingParameter = argv[6]
 
+startx = argv[7]
+starty = argv[8]
+width = argv[9]
+length = argv[10]
+
+micronsPerPixel = argv[11]
+pitch = argv[12]
+
 
 #print analysisDirectory, inputImageFileName, colorMode, plotMode
-javaCommand = 'java -jar -Xmx2048m ' + imageJjarName + ' -ijpath ' + imageJjarPath + ' -batch ' + imageJscript + ' ' + inputImageFileName + ':' + colorMode + ':' + backgroundSmoothingParameter   + ':' + foregroundSmoothingParameter
+javaCommand = 'java -jar -Xmx2048m ' + imageJjarName + ' -ijpath ' + imageJjarPath + \
+              ' -batch ' + imageJscript + ' ' + inputImageFileName + ':' + colorMode + \
+              ':' + backgroundSmoothingParameter   + ':' + foregroundSmoothingParameter + \
+              ':' + startx   + ':' + starty + \
+              ':' + width   + ':' + length
 #print javaCommand
 
 os.system(javaCommand)
@@ -41,32 +54,45 @@ data = []
 for d in dataRaw:
     d001 = d.split('\t')
     d002 = d001[1].split('\n')
-    data.append(float(d002[0]))
+    data.append(60000 - float(d002[0]))
+    #data.append(float(d002[0]))
 
-#find all peaks between 0 marks. peaks will be the lighter
-#regions.
-#first, find all zeros
-zeroCross = []
-for i in range(0,len(data)-1):
-    if(copysign(data[i],data[i+1]) != data[i]):
-        zeroCross.append(i)
 
-#print zeroCrossing
-#print len(zeroCrossing)
+#print data
+
+#plt.plot(data)
+#plt.show()
+#exit(1)
+
+
+
+brightestValues = []
+for i in range(1,len(data)-1):
+    if(data[i] < data[i-1] and data[i] < data[i+1]): # then this is the highest point
+        brightestValues.append(i)
+
+
+print brightestValues
+
+#exit(1)
 
 centersOfMass = []
 numerators = []
 denominators =[]
 
 #need to be capturing the cm of the negative values
-firstEval = data[zeroCross[0]+1]
-start = 0
-if(firstEval != copysign(firstEval,-1.0)):
-    start = 1
 
-for i in range(len(zeroCross)/2-1):
-    startIndex = zeroCross[2*i+start]
-    endIndex = zeroCross[2*i+start+1]
+#firstEval = data[zeroCross[0]+1]
+#start = 0
+#if(firstEval != copysign(firstEval,-1.0)):
+#    start = 1
+
+#for i in range(len(zeroCross)/2-1):
+for i in range(len(brightestValues)-1):
+    #startIndex = zeroCross[2*i+start]
+    #endIndex = zeroCross[2*i+start+1]
+    startIndex = brightestValues[i]
+    endIndex = brightestValues[i+1]
     numerator = 0.
     denominator = 0.
 
@@ -75,20 +101,33 @@ for i in range(len(zeroCross)/2-1):
         denominator = denominator + data[i]
     numerators.append(numerator)
     denominators.append(denominator)
-    centersOfMass.append(numerator/denominator)
+    centersOfMass.append(1.0*numerator/denominator)
 
 #print numerators
 #print centersOfMass
 #print len(centersOfMass)
 #print 'started at', start
 
+plotYvalues = []
+stripNumber = []
+
 distances = []
 for i in range(len(centersOfMass)-1):
-    distances.append(centersOfMass[i+1]-centersOfMass[i])
+    differencesInMicrons = ((centersOfMass[i+1]-centersOfMass[i])-float(pitch)/float(micronsPerPixel))*float(micronsPerPixel)
+    distanceInMicrons = (centersOfMass[i])*float(micronsPerPixel)
+    yValue = (distanceInMicrons - (i)*float(pitch))
 
-import matplotlib.pyplot as plt
-plt.plot(distances)
-plt.ylabel('pixel values from edge')
+    stripNumber.append(i)
+    plotYvalues.append(yValue)
+    #plotYvalues.append(differencesInMicrons)
+
+
+
+
+plt.plot(stripNumber, plotYvalues)
+#plt.ylabel('Ruler Grade location minus ideal location (microns)')
+plt.ylabel('Resistive strip location minus ideal location (microns)')
+plt.xlabel('Resistive strip #')
 plt.show()
 
 
