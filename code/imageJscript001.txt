@@ -12,8 +12,8 @@ if (lengthOf(argv) == 0) {
 }
 arg_array = split(argv,":");
 
-color = arg_array[0];
-fileToOpen = arg_array[1];
+fileToOpen = arg_array[0];
+color = arg_array[1];
 bGroundLoop = arg_array[2];
 fGroundLoop = arg_array[3];
 

@@ -9,6 +9,7 @@ import os
 from sys import argv
 from math import copysign
 import matplotlib.pyplot as plt
+import pickle
 
 
 
@@ -21,17 +22,22 @@ imageJscript = '/Users/ainglis/pycharmbase/cern-atlas-mmOptical/code/imageJscrip
 analysisDirectory = argv[1]
 inputImageFileName = argv[2]
 colorMode = argv[3] #R-red channel, G-green, B-blue
-plotMode = argv[4] #0-gnuplot, 1-pyplot
-backgroundSmoothingParameter = argv[5]
-foregroundSmoothingParameter = argv[6]
+backgroundSmoothingParameter = argv[4]
+foregroundSmoothingParameter = argv[5]
 
-startx = argv[7]
-starty = argv[8]
-width = argv[9]
-length = argv[10]
+startx = argv[6]
+starty = argv[7]
+width = argv[8]
+length = argv[9]
 
-micronsPerPixel = argv[11]
-pitch = argv[12]
+micronsPerPixel = argv[10]
+pitch = argv[11]
+
+dumpRulerData = argv[12]
+
+adjustToRuler = argv[13] #0 no adjustment, 1 adjustment
+adjustmentFile = argv[14] # this is a pickle file
+adjustmentSpacing = argv[15] # this is how many microns there are between each adjustment
 
 
 #print analysisDirectory, inputImageFileName, colorMode, plotMode
@@ -57,14 +63,11 @@ for d in dataRaw:
     data.append(60000 - float(d002[0]))
     #data.append(float(d002[0]))
 
-
 #print data
 
 #plt.plot(data)
 #plt.show()
 #exit(1)
-
-
 
 brightestValues = []
 for i in range(1,len(data)-1):
@@ -72,7 +75,7 @@ for i in range(1,len(data)-1):
         brightestValues.append(i)
 
 
-print brightestValues
+#print brightestValues
 
 #exit(1)
 
@@ -104,30 +107,65 @@ for i in range(len(brightestValues)-1):
     centersOfMass.append(1.0*numerator/denominator)
 
 #print numerators
-#print centersOfMass
-#print len(centersOfMass)
-#print 'started at', start
+print centersOfMass
+
+if int(dumpRulerData) == 1:
+    pickle.dump( centersOfMass, open( "AUTO_ruler.p", "wb" ) )
+
 
 plotYvalues = []
 stripNumber = []
 
-distances = []
-for i in range(len(centersOfMass)-1):
-    differencesInMicrons = ((centersOfMass[i+1]-centersOfMass[i])-float(pitch)/float(micronsPerPixel))*float(micronsPerPixel)
-    distanceInMicrons = (centersOfMass[i])*float(micronsPerPixel)
-    yValue = (distanceInMicrons - (i)*float(pitch))
+if int(adjustToRuler) == 1:
+    #load in the adjustment
+    adjustmentList = pickle.load( open( adjustmentFile, "rb" ) )
+    #print adjustmentList
 
-    stripNumber.append(i)
-    plotYvalues.append(yValue)
-    #plotYvalues.append(differencesInMicrons)
+    # we scan through the centers of mass and find which adjustment lists they are between
+    newCentersInMicrons = []
+    for num,i in enumerate(centersOfMass):
+        #print i
+        for j in range(0,len(adjustmentList)-1):
+            #print adjustmentList[j]
+            if i >= adjustmentList[j] and i < adjustmentList[j+1]:
+                distanceInMicrons = float(adjustmentSpacing)*j + float(adjustmentSpacing)*(i - adjustmentList[j])/(adjustmentList[j+1]-adjustmentList[j])
+                newCentersInMicrons.append(distanceInMicrons)
+
+                yValue = (distanceInMicrons - (num)*float(pitch))
+                #print distanceInMicrons,(num)*float(pitch)
+                stripNumber.append(num)
+                plotYvalues.append(yValue)
+
+
+    #print newCentersInMicrons
+    #exit(1)
+#print 'started at', start
+
+#for the ruler, write out the center of masses
+
+else:
+
+    for i in range(len(centersOfMass)-1):
+        differencesInMicrons = ((centersOfMass[i+1]-centersOfMass[i])-float(pitch)/float(micronsPerPixel))*float(micronsPerPixel)
+        distanceInMicrons = (centersOfMass[i])*float(micronsPerPixel)
+        yValue = (distanceInMicrons - (i+1)*float(pitch))
+
+        stripNumber.append(i)
+        plotYvalues.append(yValue)
+        #plotYvalues.append(differencesInMicrons)
 
 
 
-
+#plt.plot(stripNumber, plotYvalues, marker='o', linestyle='-')
 plt.plot(stripNumber, plotYvalues)
-#plt.ylabel('Ruler Grade location minus ideal location (microns)')
+#plt.plot(stripNumber, plotYvalues, 'ro')
+
 plt.ylabel('Resistive strip location minus ideal location (microns)')
 plt.xlabel('Resistive strip #')
+
+#plt.ylabel('Ruler Grade location minus calculated location (microns)')
+#plt.xlabel('Ruler grade #')
+
 plt.show()
 
 
