@@ -10,6 +10,8 @@ from sys import argv
 from math import copysign
 import matplotlib.pyplot as plt
 import pickle
+import numpy
+
 
 
 
@@ -31,13 +33,19 @@ width = argv[8]
 length = argv[9]
 
 micronsPerPixel = argv[10]
-pitch = argv[11]
+Realpitch = argv[11]
 
 dumpRulerData = argv[12]
 
 adjustToRuler = argv[13] #0 no adjustment, 1 adjustment
 adjustmentFile = argv[14] # this is a pickle file
 adjustmentSpacing = argv[15] # this is how many microns there are between each adjustment
+
+
+thicknessOfRuler = argv[16]
+distanceOfCamera = argv[17]
+
+pitch = float(Realpitch)*(1-float(thicknessOfRuler)/float(distanceOfCamera))
 
 
 #print analysisDirectory, inputImageFileName, colorMode, plotMode
@@ -60,12 +68,12 @@ data = []
 for d in dataRaw:
     d001 = d.split('\t')
     d002 = d001[1].split('\n')
-    data.append(60000 - float(d002[0]))
+    data.append(-float(d002[0]))
     #data.append(float(d002[0]))
 
 #print data
 
-#plt.plot(data)
+#plt.plot(data, marker='o', linestyle='-')
 #plt.show()
 #exit(1)
 
@@ -96,23 +104,36 @@ for i in range(len(brightestValues)-1):
     #endIndex = zeroCross[2*i+start+1]
     startIndex = brightestValues[i]
     endIndex = brightestValues[i+1]
+    #print endIndex - startIndex
     numerator = 0.
     denominator = 0.
 
+    #find the lowest value
+    lowestValue = 999999999999
     for i in range (startIndex,endIndex):
-        numerator = numerator + i*data[i]
-        denominator = denominator + data[i]
+        if(data[i]<lowestValue):
+            lowestValue = data[i]
+
+    for i in range (startIndex,endIndex):
+        numerator = numerator + i*(data[i] - lowestValue)
+        denominator = denominator + data[i] - lowestValue
     numerators.append(numerator)
     denominators.append(denominator)
     centersOfMass.append(1.0*numerator/denominator)
 
 #print numerators
-print centersOfMass
+#print centersOfMass
 
 if int(dumpRulerData) == 1:
     pickle.dump( centersOfMass, open( "AUTO_ruler.p", "wb" ) )
 
+differences = []
+#find the pixels per micron
+for i in range(0,len(centersOfMass)-1):
+    differences.append(float(Realpitch)/(centersOfMass[i+1] - centersOfMass[i]))
+    #print difference
 
+#plt.plot(differences)
 plotYvalues = []
 stripNumber = []
 
@@ -123,48 +144,87 @@ if int(adjustToRuler) == 1:
 
     # we scan through the centers of mass and find which adjustment lists they are between
     newCentersInMicrons = []
+    print 'number of centers of masses:',len(centersOfMass)
+
+    firstFound = False
+    firstDistance = 0
+
+
     for num,i in enumerate(centersOfMass):
-        #print i
+        #print 'num','i',num,i
         for j in range(0,len(adjustmentList)-1):
             #print adjustmentList[j]
             if i >= adjustmentList[j] and i < adjustmentList[j+1]:
+
                 distanceInMicrons = float(adjustmentSpacing)*j + float(adjustmentSpacing)*(i - adjustmentList[j])/(adjustmentList[j+1]-adjustmentList[j])
                 newCentersInMicrons.append(distanceInMicrons)
 
-                yValue = (distanceInMicrons - (num)*float(pitch))
+                if(not firstFound):
+                    firstFound = True
+                    firstDistance = distanceInMicrons
+                    #print firstDistance, distanceInMicrons, (num-1)*float(pitch)
+
+                yValue = (distanceInMicrons - (num)*float(pitch) - firstDistance)
                 #print distanceInMicrons,(num)*float(pitch)
-                stripNumber.append(num)
+                stripNumber.append(num*float(Realpitch)/10000.)
                 plotYvalues.append(yValue)
 
 
+    arr = numpy.array(plotYvalues)
+
+    mean = numpy.mean(arr)
+    std = numpy.std(arr)
+    print 'mean',mean
+    print 'std',std
+
+    for i,value in enumerate(plotYvalues):
+        plotYvalues[i] = plotYvalues[i] - mean
     #print newCentersInMicrons
     #exit(1)
 #print 'started at', start
 
 #for the ruler, write out the center of masses
 
+
+
 else:
+    print 'number of centers of masses:',len(centersOfMass)
+
+    firstFound = False
+    firstDistance = 0
 
     for i in range(len(centersOfMass)-1):
         differencesInMicrons = ((centersOfMass[i+1]-centersOfMass[i])-float(pitch)/float(micronsPerPixel))*float(micronsPerPixel)
         distanceInMicrons = (centersOfMass[i])*float(micronsPerPixel)
-        yValue = (distanceInMicrons - (i+1)*float(pitch))
 
-        stripNumber.append(i)
+        if(not firstFound):
+            firstFound = True
+            firstDistance = distanceInMicrons
+            #print firstDistance, distanceInMicrons
+
+        yValue = (distanceInMicrons - (i)*float(pitch) -firstDistance)
+
+        stripNumber.append(i*float(Realpitch)/10000.)
         plotYvalues.append(yValue)
         #plotYvalues.append(differencesInMicrons)
 
 
+#print stripNumber
+#print plotYvalues
 
-#plt.plot(stripNumber, plotYvalues, marker='o', linestyle='-')
-plt.plot(stripNumber, plotYvalues)
+plt.plot(stripNumber, plotYvalues, marker='o', linestyle='-')
+
+
+#plt.plot(stripNumber, plotYvalues)
 #plt.plot(stripNumber, plotYvalues, 'ro')
 
-plt.ylabel('Resistive strip location minus ideal location (microns)')
-plt.xlabel('Resistive strip #')
+plt.ylabel('Strip location vs. ideal (microns)')
+plt.xlabel('Strip location (cm)')
+
+plt.savefig('plot.png')
 
 #plt.ylabel('Ruler Grade location minus calculated location (microns)')
-#plt.xlabel('Ruler grade #')
+#plt.xlabel('Ruler grade # in 1/64th inches')
 
 plt.show()
 
