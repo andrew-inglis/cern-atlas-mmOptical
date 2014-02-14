@@ -58,7 +58,6 @@ if(int(imageType) == 0):
 elif(int(imageType) == 1):
     scriptToUse = imageJscript_jpg
 
-print 'hiiiiiii', scriptToUse
 #print analysisDirectory, inputImageFileName, colorMode, plotMode
 javaCommand = 'java -jar -Xmx2048m ' + imageJjarName + ' -ijpath ' + imageJjarPath + \
               ' -batch ' + scriptToUse + ' ' + inputImageFileName + ':' + colorMode + \
@@ -83,8 +82,6 @@ for d in dataRaw:
         data.append(-float(d002[0]))
     elif(int(imageType) == 1):
         data.append(float(d002[0]))
-    #data.append(-float(d002[0]))
-    #data.append(float(d002[0]))
 
 #print data
 
@@ -102,7 +99,6 @@ for i in range(1,len(data)-1):
 
 print brightestValues
 
-#exit(1)
 
 centersOfMass = []
 numerators = []
@@ -115,13 +111,9 @@ denominators =[]
 #if(firstEval != copysign(firstEval,-1.0)):
 #    start = 1
 
-#for i in range(len(zeroCross)/2-1):
 for i in range(len(brightestValues)-1):
-    #startIndex = zeroCross[2*i+start]
-    #endIndex = zeroCross[2*i+start+1]
     startIndex = brightestValues[i]
     endIndex = brightestValues[i+1]
-    #print endIndex - startIndex
     numerator = 0.
     denominator = 0.
 
@@ -147,9 +139,7 @@ if int(dumpRulerData) == 1:
 differences = []
 #find the pixels per micron
 for i in range(0,len(centersOfMass)-1):
-    #differences.append(float(Realpitch)/(centersOfMass[i+1] - centersOfMass[i]))
     differences.append((centersOfMass[i+1] - centersOfMass[i]))
-    #print difference
 
 #plt.plot(differences,marker='o', linestyle='-')
 
@@ -166,7 +156,6 @@ stripNumber = []
 if int(adjustToRuler) == 1:
     #load in the adjustment
     adjustmentList = pickle.load( open( adjustmentFile, "rb" ) )
-    #print adjustmentList
 
     # we scan through the centers of mass and find which adjustment lists they are between
     newCentersInMicrons = []
@@ -177,9 +166,7 @@ if int(adjustToRuler) == 1:
 
 
     for num,i in enumerate(centersOfMass):
-        #print 'num','i',num,i
         for j in range(0,len(adjustmentList)-1):
-            #print adjustmentList[j]
             if i >= adjustmentList[j] and i < adjustmentList[j+1]:
 
                 distanceInMicrons = float(adjustmentSpacing)*j + float(adjustmentSpacing)*(i - adjustmentList[j])/(adjustmentList[j+1]-adjustmentList[j])
@@ -188,10 +175,8 @@ if int(adjustToRuler) == 1:
                 if(not firstFound):
                     firstFound = True
                     firstDistance = distanceInMicrons
-                    #print firstDistance, distanceInMicrons, (num-1)*float(pitch)
 
                 yValue = (distanceInMicrons - (num)*float(pitch) - firstDistance)
-                #print distanceInMicrons,(num)*float(pitch)
                 stripNumber.append(num*float(Realpitch)/10000.)
                 plotYvalues.append(yValue)
 
@@ -205,11 +190,6 @@ if int(adjustToRuler) == 1:
 
     for i,value in enumerate(plotYvalues):
         plotYvalues[i] = plotYvalues[i] - mean
-    #print newCentersInMicrons
-    #exit(1)
-#print 'started at', start
-
-#for the ruler, write out the center of masses
 
 
 
@@ -226,7 +206,6 @@ else:
         if(not firstFound):
             firstFound = True
             firstDistance = distanceInMicrons
-            #print firstDistance, distanceInMicrons
 
         yValue = (distanceInMicrons - (i)*float(pitch) -firstDistance)
 
@@ -235,8 +214,6 @@ else:
         #plotYvalues.append(differencesInMicrons)
 
 
-#print stripNumber
-#print plotYvalues
 
 
 
@@ -244,8 +221,6 @@ else:
 plt.plot(stripNumber, plotYvalues, marker='o', linestyle='-')
 
 
-#plt.plot(stripNumber, plotYvalues)
-#plt.plot(stripNumber, plotYvalues, 'ro')
 
 plt.ylabel('Strip location vs. ideal (microns)')
 plt.xlabel('Strip location (cm)')
