@@ -29,30 +29,6 @@ print(fileToOpen);
 open(fileToOpen);
 //open("./cropped_MM.tif");
 
-run("Stack to Images");
-// only use the image of interest
-if (color=="R" || color=="r") {
-	selectWindow("Blue");
-	close();
-	selectWindow("Green");
-	close();
-	selectWindow("Red");
-}
-if (color=="G" || color=="g") {
-	selectWindow("Blue");
-	close();
-	selectWindow("Red");
-	close();
-	selectWindow("Green");
-}
-if (color=="B" || color=="b") {
-	selectWindow("Green");
-	close();
-	selectWindow("Red");
-	close();
-	selectWindow("Blue");
-}
-
 
 // save both fore and background.
 

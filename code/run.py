@@ -18,7 +18,9 @@ import numpy
 # Hard coded directories. Please change these accordingly.
 imageJjarName = '/Users/ainglis/Applications/ImageJ-platInd/ij.jar'
 imageJjarPath = '/Users/ainglis/Applications/ImageJ-platInd'
+
 imageJscript = '/Users/ainglis/pycharmbase/cern-atlas-mmOptical/code/imageJscript001.txt'
+imageJscript_jpg = '/Users/ainglis/pycharmbase/cern-atlas-mmOptical/code/imageJscript002_jpg.txt'
 
 
 analysisDirectory = argv[1]
@@ -45,12 +47,21 @@ adjustmentSpacing = argv[15] # this is how many microns there are between each a
 thicknessOfRuler = argv[16]
 distanceOfCamera = argv[17]
 
+imageType = argv[18] #0 for raw format tiff, 1 for JPG (that Fabian sent)
+
 pitch = float(Realpitch)*(1-float(thicknessOfRuler)/float(distanceOfCamera))
 
 
+scriptToUse = ''
+if(int(imageType) == 0):
+    scriptToUse = imageJscript
+elif(int(imageType) == 1):
+    scriptToUse = imageJscript_jpg
+
+print 'hiiiiiii', scriptToUse
 #print analysisDirectory, inputImageFileName, colorMode, plotMode
 javaCommand = 'java -jar -Xmx2048m ' + imageJjarName + ' -ijpath ' + imageJjarPath + \
-              ' -batch ' + imageJscript + ' ' + inputImageFileName + ':' + colorMode + \
+              ' -batch ' + scriptToUse + ' ' + inputImageFileName + ':' + colorMode + \
               ':' + backgroundSmoothingParameter   + ':' + foregroundSmoothingParameter + \
               ':' + startx   + ':' + starty + \
               ':' + width   + ':' + length
@@ -68,22 +79,28 @@ data = []
 for d in dataRaw:
     d001 = d.split('\t')
     d002 = d001[1].split('\n')
-    data.append(-float(d002[0]))
+    if(int(imageType) == 0):
+        data.append(-float(d002[0]))
+    elif(int(imageType) == 1):
+        data.append(float(d002[0]))
+    #data.append(-float(d002[0]))
     #data.append(float(d002[0]))
 
 #print data
 
-#plt.plot(data, marker='o', linestyle='-')
+#plt.plot(data)
 #plt.show()
 #exit(1)
 
 brightestValues = []
 for i in range(1,len(data)-1):
-    if(data[i] < data[i-1] and data[i] < data[i+1]): # then this is the highest point
+    if( ( (data[i] < data[i-1] and data[i] < data[i+1]) or
+        (data[i] == data[i+1] and data[i] < data[i-1] and data[i+1] < data[i+2]))
+        and data[i] < 0): # then this is the lowest point
         brightestValues.append(i)
 
 
-#print brightestValues
+print brightestValues
 
 #exit(1)
 
@@ -130,10 +147,19 @@ if int(dumpRulerData) == 1:
 differences = []
 #find the pixels per micron
 for i in range(0,len(centersOfMass)-1):
-    differences.append(float(Realpitch)/(centersOfMass[i+1] - centersOfMass[i]))
+    #differences.append(float(Realpitch)/(centersOfMass[i+1] - centersOfMass[i]))
+    differences.append((centersOfMass[i+1] - centersOfMass[i]))
     #print difference
 
-#plt.plot(differences)
+#plt.plot(differences,marker='o', linestyle='-')
+
+arr001 = numpy.array(differences)
+
+mean001 = numpy.mean(arr001)
+std001 = numpy.std(arr001)
+print 'mean of pixel values between strips',mean001
+print 'std of pixel values between strips',std001
+
 plotYvalues = []
 stripNumber = []
 
@@ -211,6 +237,9 @@ else:
 
 #print stripNumber
 #print plotYvalues
+
+
+
 
 plt.plot(stripNumber, plotYvalues, marker='o', linestyle='-')
 

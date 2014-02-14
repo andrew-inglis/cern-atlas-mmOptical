@@ -32,11 +32,27 @@ Variables
 
 from the directory where you would like the temporary image files to be created, run:
 python ~/cern-atlas-mmOptical/code/run.py
-[working directory] [tif image file] [color channel to analyze] [blurring of the background]
-[blurring of the foreground] [startx of analysis strip] [starty] [width of analysis strip]
-[length] [microns per pixel of image] [pitch of analysis strip in microns]
-[1-create ruler lookup out of analysis strip]
-[1-apply pre-created ruler to the analysis of the current strip] [pitch of ruler in microns]
+
+analysisDirectory = argv[1]
+inputImageFileName = argv[2]
+colorMode = argv[3] #R-red channel, G-green, B-blue
+backgroundSmoothingParameter = argv[4]
+foregroundSmoothingParameter = argv[5]
+startx = argv[6]
+starty = argv[7]
+width = argv[8]
+length = argv[9]
+micronsPerPixel = argv[10]
+Realpitch = argv[11]
+dumpRulerData = argv[12]
+adjustToRuler = argv[13] #0 no adjustment, 1 adjustment
+adjustmentFile = argv[14] # this is a pickle file
+adjustmentSpacing = argv[15] # this is how many microns there are between each adjustment
+thicknessOfRuler = argv[16]
+distanceOfCamera = argv[17]
+imageType = argv[18] #0 for raw format tiff, 1 for JPG (that Fabian sent)
+
+
 
 example:
 1. driectory has the image IMGP0853_crop.tif in it
